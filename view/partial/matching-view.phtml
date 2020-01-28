@@ -1,0 +1,71 @@
+<?php
+$aMatchingResults = $this->aPartialData['aMatchingResults'];
+?>
+<ul class="list-group">
+    <?php
+    foreach($aMatchingResults as $oSkeleton) {
+        ?>
+        <li class="list-group-item">
+            <?=$this->translate('Article').': <b>'.$oSkeleton->getLabel().'</b>'?>
+            &nbsp;<a href="/article/view/<?=$oSkeleton->getID()?>"><i class="fas fa-external-link-square-alt"></i></a>
+            <?php
+            $aCategories = $oSkeleton->getMultiSelectField('categories');
+            if(count($aCategories) > 0) {
+                echo '<br/><small>Kategorie: ';
+                foreach($oSkeleton->getMultiSelectField('categories',true) as $oCt) {
+                    echo $oCt->getLabel().',';
+                }
+                echo '</small>';
+            }
+
+            $iHasModel = $oSkeleton->getSelectFieldID('model_idfs');
+            if($iHasModel != 0) {
+                echo '<br/><small>Modell: ';
+                $oModel = $oSkeleton->getSelectField('model_idfs');
+                echo $oModel->getLabel().',';
+                echo '</small>';
+            }
+            $iHasManufacturer = $oSkeleton->getSelectFieldID('manufacturer_idfs');
+            if($iHasManufacturer != 0) {
+                echo '<br/><small>Hersteller: ';
+                $oManufacturer = $oSkeleton->getSelectField('manufacturer_idfs');
+                echo $oManufacturer->getLabel().',';
+                echo '</small>';
+            }
+            if($oSkeleton->getTextField('year_of_construction')) {
+                $sYear = $oSkeleton->getTextField('year_of_construction');
+                echo '<div class="row"><div class="col-md-3"><small>Baujahr: ';
+                echo $sYear;
+                echo '</small></div>';
+                # Compare Year of construction between Skeleton and Skeletonrequest
+                if($sYear != $this->oItem->getTextField('year_of_construction')) {
+                    if($this->oItem->getTextField('year_of_construction') != '') {
+                        echo '<div class="col-md-3"><small class="alert alert-info">Gewünschtes Baujahr:&nbsp;<b>' . $this->oItem->getTextField('year_of_construction') . '</b></small></div>';
+                    }
+                } else {
+                    echo '<div class="col-md-3"><i class="fas fa-check text-success"></i> <small>Baujahr exakt wie gesucht!</small></div>';
+                }
+                echo '</div>';
+            }
+            if($oSkeleton->getTextField('price_sell')) {
+                echo '<div class="row"><div class="col-md-3"><b>Verkaufspreis: ';
+                echo '€ '.number_format($oSkeleton->getTextField('price_sell'),2,'.','\'');
+                echo '</b></div>';
+                if($oSkeleton->getTextField('price_sell') > $this->oItem->budget) {
+                    echo '<div class="col-md-3"><b class="alert alert-danger"> ';
+                    echo '<b>€ '.number_format($oSkeleton->getTextField('price_sell')-$this->oItem->budget,2,'.','\'');
+                    echo '</b>&nbsp;über Budget</b></div>';
+                } else {
+                    echo '<div class="col-md-3"><b class="alert alert-success"> ';
+                    echo 'Kaufpreis innerhalb des Budgets</b></div>';
+                }
+                echo '</div>';
+
+            }
+            ?>
+            <a class="btn btn-primary" href="/skeletonrequest/success/<?=$this->oItem->getID()?>-<?=$oSkeleton->getID()?>">
+                Maschine wählen und Gesuch abschliessen
+            </a>
+        </li>
+    <?php } ?>
+</ul>

@@ -199,8 +199,10 @@ class SkeletonrequestController extends CoreController {
 
         $this->layout('layout/json');
 
+        $aFormData = $this->parseFormData($_REQUEST);
+
         # Save Multiselect
-        $this->updateMultiSelectFields($_REQUEST,$oSkeletonrequest,'skeletonrequest-single');
+        $this->updateMultiSelectFields($aFormData,$oSkeletonrequest,'skeletonrequest-single');
 
         # Log Performance in DB
         $aMeasureEnd = getrusage();
@@ -243,6 +245,19 @@ class SkeletonrequestController extends CoreController {
 
         # Load Fields for View Form
         $this->setFormFields($this->sSingleForm);
+
+        /**
+         * @addedtoskeleton
+         * @requires 1.0.5
+         * @campatibleto master-dev
+         */
+        $aPartialData = [
+            'aMatchingResults'=>$oSkeletonrequest->getMatchingResults(),
+        ];
+        $this->setPartialData('matching',$aPartialData);
+        /**
+         * @addedtoskeletonend
+         */
 
         # Log Performance in DB
         $aMeasureEnd = getrusage();
