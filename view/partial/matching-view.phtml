@@ -1,71 +1,149 @@
 <?php
+# Get Matching Results from Controller
+use Application\Controller\CoreController;
+
 $aMatchingResults = $this->aPartialData['aMatchingResults'];
-?>
-<ul class="list-group">
-    <?php
-    foreach($aMatchingResults as $oSkeleton) {
-        ?>
-        <li class="list-group-item">
-            <?=$this->translate('Article').': <b>'.$oSkeleton->getLabel().'</b>'?>
-            &nbsp;<a href="/article/view/<?=$oSkeleton->getID()?>"><i class="fas fa-external-link-square-alt"></i></a>
-            <?php
-            $aCategories = $oSkeleton->getMultiSelectField('categories');
-            if(count($aCategories) > 0) {
-                echo '<br/><small>Kategorie: ';
-                foreach($oSkeleton->getMultiSelectField('categories',true) as $oCt) {
-                    echo $oCt->getLabel().',';
-                }
-                echo '</small>';
-            }
+$aMatchingResultViewCriterias = $this->aPartialData['aViewCriterias'];
 
-            $iHasModel = $oSkeleton->getSelectFieldID('model_idfs');
-            if($iHasModel != 0) {
-                echo '<br/><small>Modell: ';
-                $oModel = $oSkeleton->getSelectField('model_idfs');
-                echo $oModel->getLabel().',';
-                echo '</small>';
-            }
-            $iHasManufacturer = $oSkeleton->getSelectFieldID('manufacturer_idfs');
-            if($iHasManufacturer != 0) {
-                echo '<br/><small>Hersteller: ';
-                $oManufacturer = $oSkeleton->getSelectField('manufacturer_idfs');
-                echo $oManufacturer->getLabel().',';
-                echo '</small>';
-            }
-            if($oSkeleton->getTextField('year_of_construction')) {
-                $sYear = $oSkeleton->getTextField('year_of_construction');
-                echo '<div class="row"><div class="col-md-3"><small>Baujahr: ';
-                echo $sYear;
-                echo '</small></div>';
-                # Compare Year of construction between Skeleton and Skeletonrequest
-                if($sYear != $this->oItem->getTextField('year_of_construction')) {
-                    if($this->oItem->getTextField('year_of_construction') != '') {
-                        echo '<div class="col-md-3"><small class="alert alert-info">Gewünschtes Baujahr:&nbsp;<b>' . $this->oItem->getTextField('year_of_construction') . '</b></small></div>';
-                    }
-                } else {
-                    echo '<div class="col-md-3"><i class="fas fa-check text-success"></i> <small>Baujahr exakt wie gesucht!</small></div>';
-                }
-                echo '</div>';
-            }
-            if($oSkeleton->getTextField('price_sell')) {
-                echo '<div class="row"><div class="col-md-3"><b>Verkaufspreis: ';
-                echo '€ '.number_format($oSkeleton->getTextField('price_sell'),2,'.','\'');
-                echo '</b></div>';
-                if($oSkeleton->getTextField('price_sell') > $this->oItem->budget) {
-                    echo '<div class="col-md-3"><b class="alert alert-danger"> ';
-                    echo '<b>€ '.number_format($oSkeleton->getTextField('price_sell')-$this->oItem->budget,2,'.','\'');
-                    echo '</b>&nbsp;über Budget</b></div>';
-                } else {
-                    echo '<div class="col-md-3"><b class="alert alert-success"> ';
-                    echo 'Kaufpreis innerhalb des Budgets</b></div>';
-                }
-                echo '</div>';
+# Get linked Skeleton
+$iLinkedSkeleton = $this->oItem->getTextField('skeleton_idfs');
 
-            }
+# Only show matching if we are not already linked
+if($iLinkedSkeleton == 0) {
+    ?>
+    <ul class="list-group">
+        <?php
+        foreach ($aMatchingResults as $oSkeleton) {
             ?>
-            <a class="btn btn-primary" href="/skeletonrequest/success/<?=$this->oItem->getID()?>-<?=$oSkeleton->getID()?>">
-                Maschine wählen und Gesuch abschliessen
-            </a>
-        </li>
-    <?php } ?>
-</ul>
+            <li class="list-group-item">
+                <?= $this->translate('Skeleton') . ': <b>' . $oSkeleton->getLabel() . '</b>' ?>
+                &nbsp;<a href="<?= $this->url('skeleton', ['action' => 'view', 'id' => $oSkeleton->getID()]) ?>"
+                         title="<?= $this->translate('View skeleton') ?>">
+                    <i class="fas fa-external-link-square-alt"></i>
+                </a>
+                <?php
+                # Loop over all matching criterias which could be shown
+                foreach (array_keys($aMatchingResultViewCriterias) as $sCriteria) {
+                    $aCriteriaInfo = $aMatchingResultViewCriterias[$sCriteria];
+
+                    # type based output
+                    switch ($aCriteriaInfo['type']) {
+                        case 'multiselect':
+                            $aCategories = $oSkeleton->getMultiSelectField($sCriteria);
+                            # only show value if skeleton really has it
+                            if (count($aCategories) > 0) {
+                                echo '<br/>';
+                                echo '<small>';
+                                echo $this->translate($aCriteriaInfo['label']) . ': ';
+                                foreach ($oSkeleton->getMultiSelectField($sCriteria, true) as $oCt) {
+                                    echo $oCt->getLabel() . ',';
+                                }
+                                echo '</small>';
+                            }
+                            break;
+                        case 'select':
+                            $iSelectFieldID = $oSkeleton->getSelectFieldID($sCriteria);
+                            # only show value if skeleton really has it
+                            if ($iSelectFieldID != 0) {
+                                echo '<br/>';
+                                echo '<small>';
+                                echo $this->translate($aCriteriaInfo['label']) . ': ';
+                                $oSelectFieldValue = $oSkeleton->getSelectField($sCriteria);
+                                echo $oSelectFieldValue->getLabel() . ',';
+                                echo '</small>';
+                            }
+                            break;
+                        case 'text':
+                            if ($oSkeleton->getTextField($sCriteria)) {
+                                $sVal = $oSkeleton->getTextField($sCriteria);
+                                echo '<div class="row"><div class="col-md-3">';
+                                echo '<small>' . $this->translate($aCriteriaInfo['label']) . ': ';
+                                echo $sVal;
+                                echo '</small></div>';
+                                # optional notice and visual comparison for result
+                                if ($aCriteriaInfo['compare_notice']) {
+                                    # Compare textfield between Skeleton and Skeletonrequest
+                                    if ($sVal != $this->oItem->getTextField($aCriteriaInfo['skeletonrequest_field'])) {
+                                        if ($this->oItem->getTextField($aCriteriaInfo['skeletonrequest_field']) != '') {
+                                            echo '<div class="col-md-3">';
+                                            echo '<small class="alert alert-info">';
+                                            echo $this->translate($aCriteriaInfo['label']) . ' ' . $this->translate('looking for') . ':';
+                                            echo '&nbsp;<b>' . $this->oItem->getTextField($aCriteriaInfo['skeletonrequest_field']) . '</b>';
+                                            echo '</small>';
+                                            echo '</div>';
+                                        }
+                                    } else {
+                                        echo '<div class="col-md-3"><i class="fas fa-check text-success"></i>';
+                                        echo ' <small>' . $this->translate($aCriteriaInfo['label']) . ' ' . $this->translate('exact match') . '!</small>';
+                                        echo '</div>';
+                                    }
+                                }
+                                echo '</div>';
+                            }
+                            break;
+                        case 'currency':
+                            if ($oSkeleton->getTextField($sCriteria)) {
+                                echo '<div class="row"><div class="col-md-3"><b>' . $this->translate($aCriteriaInfo['label']) . ': ';
+                                echo '€ ' . number_format($oSkeleton->getTextField($sCriteria), 2, '.', '\'');
+                                echo '</b></div>';
+                                if ($aCriteriaInfo['compare_notice']) {
+                                    if ($oSkeleton->getTextField($sCriteria) > $this->oItem->getTextField($aCriteriaInfo['skeletonrequest_field'])) {
+                                        echo '<div class="col-md-3"><b class="alert alert-danger">';
+                                        echo '<b>€ ' . number_format($oSkeleton->getTextField($sCriteria) - $this->oItem->getTextField($aCriteriaInfo['skeletonrequest_field']), 2, '.', '\'');
+                                        echo '</b>&nbsp;' . $this->translate('over') . ' ' . $this->translate($aCriteriaInfo['label']) . '</b></div>';
+                                    } else {
+                                        echo '<div class="col-md-3"><b class="alert alert-success"> ';
+                                        echo $this->translate($aCriteriaInfo['label']) . ' is matching</b></div>';
+                                    }
+                                }
+                                echo '</div>';
+
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                ?>
+                <a class="btn btn-primary"
+                   href="/skeletonrequest/success/<?= $this->oItem->getID() ?>-<?= $oSkeleton->getID() ?>">
+                    <?= $this->translate('Choose Skeleton & Close Request') ?>
+                </a>
+            </li>
+        <?php } ?>
+    </ul>
+    <?php
+} else {
+    $oSkeletonTbl = false;
+    try {
+        $oSkeletonTbl = CoreController::$oServiceManager->get(\OnePlace\Skeleton\Model\SkeletonTable::class);
+    } catch(\RuntimeException $e) {
+        ?>
+        <div class="alert alert-warning">
+            <?=$this->translate('could not load skeleton table')?>
+        </div>
+        <?php
+    }
+
+    $oSkeleton = false;
+    if($oSkeletonTbl) {
+        try {
+            $oSkeleton = $oSkeletonTbl->getSingle($iLinkedSkeleton);
+        } catch(\RuntimeException $e) {
+            ?>
+            <div class="alert alert-warning">
+                <?=$this->translate('could not find linked skeleton')?>
+            </div>
+            <?php
+        }
+    }
+
+    if($oSkeleton) { ?>
+        <h3><?=$this->translate('Matching was successful')?></h3>
+        <p><?=$this->translate('Linked Skeleton')?>: <a href="<?=$this->url('skeleton',['action'=>'view','id'=>$oSkeleton->getID()])?>" title="<?=$this->translate('View Skeleton')?>">
+                <?=$oSkeleton->getLabel()?>
+            </a></p>
+    <?php
+    }
+
+}

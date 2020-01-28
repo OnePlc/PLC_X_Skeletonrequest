@@ -24,12 +24,14 @@ INSERT INTO `permission` (`permission_key`, `module`, `label`, `nav_label`, `nav
 ('edit', 'OnePlace\\Skeletonrequest\\Controller\\SkeletonrequestController', 'Edit', '', '', 0),
 ('index', 'OnePlace\\Skeletonrequest\\Controller\\SkeletonrequestController', 'Index', 'Skeletonrequests', '/skeletonrequest', 1),
 ('list', 'OnePlace\\Skeletonrequest\\Controller\\ApiController', 'List', '', '', 1),
-('view', 'OnePlace\\Skeletonrequest\\Controller\\SkeletonrequestController', 'View', '', '', 0);
+('view', 'OnePlace\\Skeletonrequest\\Controller\\SkeletonrequestController', 'View', '', '', 0),
+('success', 'OnePlace\\Skeletonrequest\\Controller\\SkeletonrequestController', 'Close as successful', '', '', 0);
 
 --
 -- Form
 --
-INSERT INTO `core_form` (`form_key`, `label`) VALUES ('skeletonrequest-single', 'Skeletonrequest');
+INSERT INTO `core_form` (`form_key`, `label`, `entity_class`, `entity_tbl_class`) VALUES
+('skeletonrequest-single', 'Skeletonrequest', 'OnePlace\\Skeletonrequest\\Model\\Skeletonrequest', 'OnePlace\\Skeletonrequest\\Model\\SkeletonrequestTable');
 
 --
 -- Index List
@@ -55,5 +57,30 @@ INSERT INTO `core_form_button` (`Button_ID`, `label`, `icon`, `title`, `href`, `
 --
 INSERT INTO `core_form_field` (`Field_ID`, `type`, `label`, `fieldkey`, `tab`, `form`, `class`, `url_view`, `url_ist`, `show_widget_left`, `allow_clear`, `readonly`, `tbl_cached_name`, `tbl_class`, `tbl_permission`) VALUES
 (NULL, 'text', 'Name', 'label', 'skeletonrequest-base', 'skeletonrequest-single', 'col-md-3', '/skeletonrequest/view/##ID##', '', 0, 1, 0, '', '', '');
+
+--
+-- Request Criteria
+--
+CREATE TABLE `skeletonrequest_criteria` (
+  `Criteria_ID` int(11) NOT NULL,
+  `criteria_entity_key` varchar(100) NOT NULL,
+  `label` varchar(255) NOT NULL,
+  `type` varchar(50) NOT NULL,
+  `compare_notice` tinyint(1) NOT NULL,
+  `skeletonrequest_field` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `skeletonrequest_criteria`
+  ADD PRIMARY KEY (`Criteria_ID`);
+
+
+ALTER TABLE `skeletonrequest_criteria`
+  MODIFY `Criteria_ID` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Widget
+--
+INSERT INTO `core_widget` (`Widget_ID`, `widget_name`, `label`, `permission`) VALUES
+(NULL, 'skeletonrequest_matching', 'Matching Results', 'index-Application\\Controller\\IndexController');
 
 COMMIT;

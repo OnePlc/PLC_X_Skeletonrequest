@@ -253,6 +253,7 @@ class SkeletonrequestController extends CoreController {
          */
         $aPartialData = [
             'aMatchingResults'=>$oSkeletonrequest->getMatchingResults(),
+            'aViewCriterias' =>$oSkeletonrequest->getMatchingCriterias(),
         ];
         $this->setPartialData('matching',$aPartialData);
         /**
@@ -268,4 +269,53 @@ class SkeletonrequestController extends CoreController {
             'oSkeletonrequest'=>$oSkeletonrequest,
         ]);
     }
+
+    /**
+     * @addedtoskeleton
+     * @requires 1.0.5
+     * @campatibleto master-dev
+     */
+    /**
+     * Close Request as successful
+     *
+     * @since 1.0.0
+     */
+    public function successAction() {
+        $aInfo = explode('-',$this->params()->fromRoute('id','0-0'));
+        $iRequestID = $aInfo[0];
+        $iSkeletonID = $aInfo[1];
+
+        try {
+            $oSkeletonTable = CoreController::$oServiceManager->get(\OnePlace\Skeleton\Model\SkeletonTable::class);
+        } catch(\RuntimeException $e) {
+            echo 'could not load skeleton table';
+            return false;
+        }
+
+        # check if state tag is active
+        $oTag = CoreController::$aCoreTables['core-tag']->select(['tag_key'=>'state']);
+        if(count($oTag) > 0) {
+            $oTagState = $oTag->current();
+            # check if we find success state tag for skeleton request
+            $oEntityTagRequest = CoreController::$aCoreTables['core-entity-tag']->select(['tag_value'=>'success','tag_idfs'=>$oTagState->Tag_ID,'entity_form_idfs'=>'skeletonrequest-single']);
+            if(count($oEntityTagRequest) > 0) {
+                $oEntityTagSuccess = $oEntityTagRequest->current();
+                $this->oTableGateway->updateAttribute('state_idfs',$oEntityTagSuccess->Entitytag_ID,'Skeletonrequest_ID',$iRequestID);
+                $this->oTableGateway->updateAttribute('skeleton_idfs',$iSkeletonID,'Skeletonrequest_ID',$iRequestID);
+            }
+            # check if we find sold state tag for skeleton
+            $oEntityTagSkeleton = CoreController::$aCoreTables['core-entity-tag']->select(['tag_value'=>'sold','tag_idfs'=>$oTagState->Tag_ID,'entity_form_idfs'=>'skeleton-single']);
+            if(count($oEntityTagSkeleton) > 0) {
+                $oEntityTagSold = $oEntityTagSkeleton->current();
+                $oSkeletonTable->updateAttribute('state_idfs',$oEntityTagSold->Entitytag_ID,'Skeleton_ID',$iRequestID);
+            }
+        }
+
+        # Display Success Message and View New Skeletonrequest
+        $this->flashMessenger()->addSuccessMessage('Skeletonrequest successfully closed');
+        return $this->redirect()->toRoute('skeletonrequest',['action'=>'view','id'=>$iRequestID]);
+    }
+    /**
+     * @addedtoskeletonend
+     */
 }

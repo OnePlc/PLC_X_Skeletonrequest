@@ -2,14 +2,12 @@ docs_dir: docs/book
 site_dir: docs/html
 nav:
   - Home: index.md
-  - Introduction: intro.md
   - 'Quick Start': quick-start.md
   - Reference:
-      - 'Dynamic Fields': dynamic-fields.md
-      - Examples: examples.md
+      - 'Options': options.md
 site_name: oneplace-skeletonrequest
 site_description: "onePlace Application Skeletonrequest Module"
 repo_url: 'https://github.com/OnePlc/PLC_X_Skeletonrequest'
-theme: readthedocs
+theme: bootstrap4
 extra:
   project: onePlc

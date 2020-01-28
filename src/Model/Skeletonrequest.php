@@ -21,7 +21,28 @@ use Laminas\Db\TableGateway\TableGateway;
 use Laminas\Db\Sql\Select;
 
 class Skeletonrequest extends CoreEntityModel {
+    /**
+     * Request Title
+     *
+     * @var string $label
+     * @since 1.0.0
+     */
     public $label;
+    /**
+     * @addedtoskeleton
+     * @requires 1.0.5
+     * @campatibleto master-dev
+     */
+    /**
+     * Request linked Skeleton
+     *
+     * @var int $skeleton_idfs linked skeleton (after successful match)
+     * @since 1.0.0
+     */
+    public $skeleton_idfs;
+    /**
+     * @addedtoskeletonend
+     */
 
     /**
      * Skeletonrequest constructor.
@@ -49,17 +70,29 @@ class Skeletonrequest extends CoreEntityModel {
         $this->id = !empty($aData['Skeletonrequest_ID']) ? $aData['Skeletonrequest_ID'] : 0;
         $this->label = !empty($aData['label']) ? $aData['label'] : '';
 
+        /**
+         * @addedtoskeleton
+         * @requires 1.0.5
+         * @campatibleto master-dev
+         */
+        $this->skeleton_idfs = !empty($aData['skeleton_idfs']) ? $aData['skeleton_idfs'] : '';
+        /**
+         * @addedtoskeletonend
+         */
+
         $this->updateDynamicFields($aData);
     }
 
+    /**
+     * @addedtoskeleton
+     * @requires 1.0.5
+     * @campatibleto master-dev
+     */
     /**
      * Get Matching Articles to Request
      *
      * @return array Matchings Results as Skeleton Entities
      * @since 1.0.0
-     * @addedtoskeleton
-     * @requires 1.0.5
-     * @campatibleto master-dev
      */
     public function getMatchingResults() {
         # Init Skeleton Table
@@ -176,6 +209,28 @@ class Skeletonrequest extends CoreEntityModel {
         }
 
         return $aMatchedArticles;
+    }
+
+    /**
+     * Get Matching Criterias for Results
+     *
+     * @return array list with criterias
+     * @since 1.0.0
+     */
+    public function getMatchingCriterias() {
+        $aMatchingCriterias = [];
+
+        # Init Criterias Table
+        if(!array_key_exists('skeleton-request-criteria',CoreController::$aCoreTables)) {
+            CoreController::$aCoreTables['skeleton-request-criteria'] = new TableGateway('skeletonrequest_criteria',CoreController::$oDbAdapter);
+        }
+
+        $oCriteriasFromDB = CoreController::$aCoreTables['skeleton-request-criteria']->select();
+        foreach($oCriteriasFromDB as $oCrit) {
+            $aMatchingCriterias[$oCrit->criteria_entity_key] = (array)$oCrit;
+        }
+
+        return $aMatchingCriterias;
     }
     /**
      * @addedtoskeletonend
