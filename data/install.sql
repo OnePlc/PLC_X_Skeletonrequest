@@ -66,13 +66,12 @@ CREATE TABLE `skeletonrequest_criteria` (
   `criteria_entity_key` varchar(100) NOT NULL,
   `label` varchar(255) NOT NULL,
   `type` varchar(50) NOT NULL,
-  `compare_notice` tinyint(1) NOT NULL,
-  `skeletonrequest_field` int(11) NOT NULL
+  `compare_notice` tinyint(1) NOT NULL DEFAULT 0,
+  `skeletonrequest_field` varchar(150) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 ALTER TABLE `skeletonrequest_criteria`
   ADD PRIMARY KEY (`Criteria_ID`);
-
 
 ALTER TABLE `skeletonrequest_criteria`
   MODIFY `Criteria_ID` int(11) NOT NULL AUTO_INCREMENT;
