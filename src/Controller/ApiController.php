@@ -52,6 +52,13 @@ class ApiController extends CoreController {
     public function indexAction() {
         $this->layout('layout/json');
 
+        # Check license
+        if(!$this->checkLicense('skeletonrequest')) {
+            $aReturn = ['state'=>'error','message'=>'no valid license for skeletonrequest found'];
+            echo json_encode($aReturn);
+            return false;
+        }
+
         $aReturn = ['state'=>'success','message'=>'Welcome to onePlace Skeletonrequest API'];
         echo json_encode($aReturn);
 
@@ -66,6 +73,13 @@ class ApiController extends CoreController {
      */
     public function listAction() {
         $this->layout('layout/json');
+
+        # Check license
+        if(!$this->checkLicense('skeletonrequest')) {
+            $aReturn = ['state'=>'error','message'=>'no valid license for skeletonrequest found'];
+            echo json_encode($aReturn);
+            return false;
+        }
 
         $bSelect2 = true;
 
@@ -117,6 +131,13 @@ class ApiController extends CoreController {
      */
     public function getAction() {
         $this->layout('layout/json');
+
+        # Check license
+        if(!$this->checkLicense('skeletonrequest')) {
+            $aReturn = ['state'=>'error','message'=>'no valid license for skeletonrequest found'];
+            echo json_encode($aReturn);
+            return false;
+        }
 
         # Get Skeletonrequest ID from route
         $iItemID = $this->params()->fromRoute('id', 0);

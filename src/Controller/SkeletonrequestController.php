@@ -62,6 +62,12 @@ class SkeletonrequestController extends CoreController {
         # Set Layout based on users theme
         $this->setThemeBasedLayout('skeletonrequest');
 
+        # Check license
+        if(!$this->checkLicense('skeletonrequest')) {
+            $this->flashMessenger()->addErrorMessage('You have no active license for skeletonrequest');
+            $this->redirect()->toRoute('home');
+        }
+
         # Add Buttons for breadcrumb
         $this->setViewButtons('skeletonrequest-index');
 
@@ -94,6 +100,12 @@ class SkeletonrequestController extends CoreController {
     public function addAction() {
         # Set Layout based on users theme
         $this->setThemeBasedLayout('skeletonrequest');
+
+        # Check license
+        if(!$this->checkLicense('skeletonrequest')) {
+            $this->flashMessenger()->addErrorMessage('You have no active license for skeletonrequest');
+            $this->redirect()->toRoute('home');
+        }
 
         # Get Request to decide wether to save or display form
         $oRequest = $this->getRequest();
@@ -148,6 +160,12 @@ class SkeletonrequestController extends CoreController {
     public function editAction() {
         # Set Layout based on users theme
         $this->setThemeBasedLayout('skeletonrequest');
+
+        # Check license
+        if(!$this->checkLicense('skeletonrequest')) {
+            $this->flashMessenger()->addErrorMessage('You have no active license for skeletonrequest');
+            $this->redirect()->toRoute('home');
+        }
 
         # Get Request to decide wether to save or display form
         $oRequest = $this->getRequest();
@@ -223,6 +241,12 @@ class SkeletonrequestController extends CoreController {
         # Set Layout based on users theme
         $this->setThemeBasedLayout('skeletonrequest');
 
+        # Check license
+        if(!$this->checkLicense('skeletonrequest')) {
+            $this->flashMessenger()->addErrorMessage('You have no active license for skeletonrequest');
+            $this->redirect()->toRoute('home');
+        }
+
         # Get Skeletonrequest ID from URL
         $iSkeletonrequestID = $this->params()->fromRoute('id', 0);
 
@@ -284,6 +308,12 @@ class SkeletonrequestController extends CoreController {
         $aInfo = explode('-',$this->params()->fromRoute('id','0-0'));
         $iRequestID = $aInfo[0];
         $iSkeletonID = $aInfo[1];
+
+        # Check license
+        if(!$this->checkLicense('skeletonrequest')) {
+            $this->flashMessenger()->addErrorMessage('You have no active license for skeletonrequest');
+            $this->redirect()->toRoute('home');
+        }
 
         try {
             $oSkeletonTable = CoreController::$oServiceManager->get(\OnePlace\Skeleton\Model\SkeletonTable::class);
