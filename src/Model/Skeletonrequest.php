@@ -95,6 +95,9 @@ class Skeletonrequest extends CoreEntityModel {
      * @since 1.0.0
      */
     public function getMatchingResults() {
+
+        $sCriteriaLinkMode = 'AND';
+
         # Init Skeleton Table
         if(!array_key_exists('skeleton',CoreController::$aCoreTables)) {
             CoreController::$aCoreTables['skeleton'] = new TableGateway('skeleton',CoreController::$oDbAdapter);
@@ -122,27 +125,69 @@ class Skeletonrequest extends CoreEntityModel {
 
         # Init Empty List
         $aMatchedArticles = [];
+        $aFieldMatchingSkipList = ['state_idfs'=>true];
 
-        # Get Matches Skeleton by Category
-        $aMatchedArticles = $this->matchByAttribute('category');
-        $bCategoryFilterActive = (count($aMatchedArticles) > 0) ? true : false;
-        $bModelFilterActive = false;
-        if(!$bCategoryFilterActive) {
-            $aMatchedArticles = $this->matchByAttribute('model');
-            $bModelFilterActive = (count($aMatchedArticles) > 0) ? true : false;
-        } else {
-            # todo: Make AND filter
+        $aCriterias = $this->getMatchingCriterias();
+
+        $oFieldsDB = CoreController::$aCoreTables['core-form-field']->select(['form'=>'skeletonrequest-single']);
+        # Match Skeletons by selected field values of request
+        $aMatchingCrits = [];
+        foreach($oFieldsDB as $oField) {
+            # skip request related fields - we only want those that are linked / correspond to skeleton
+            if(array_key_exists($oField->fieldkey,$aFieldMatchingSkipList)) {
+                continue;
+            }
+            switch($oField->type) {
+                case 'select':
+                    $aSingleMatches = $this->matchByAttribute($oField->fieldkey,'single');
+                    $aMatchedArticles = array_merge($aMatchedArticles,$aSingleMatches);
+                    if(count($aSingleMatches) > 0) {
+                        if(!array_key_exists($oField->fieldkey,$aMatchingCrits)) {
+                            $aMatchingCrits[$oField->fieldkey] = [];
+                        }
+                        foreach($aSingleMatches as $oMatch) {
+                            $aMatchingCrits[$oField->fieldkey][$oMatch->getID()] = true;
+                        }
+                    }
+                    break;
+                case 'multiselect':
+                    $aMultiMatches = $this->matchByAttribute(str_replace(['ies'],['y'],$oField->fieldkey),'multi');
+                    $aMatchedArticles = array_merge($aMatchedArticles,$aMultiMatches);
+                    if(count($aMultiMatches) > 0) {
+                        if(!array_key_exists($oField->fieldkey,$aMultiMatches)) {
+                            $aMatchingCrits[$oField->fieldkey] = [];
+                        }
+                        foreach($aMultiMatches as $oMatch) {
+                            $aMatchingCrits[$oField->fieldkey][$oMatch->getID()] = true;
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
 
-        if(!$bCategoryFilterActive && !$bModelFilterActive) {
-            $aMatchedArticles = $this->matchByAttribute('manufacturer');
-        } else {
-           # todo: Make AND filter
+        # sort matchings by id to prevent duplicates from different matchings
+        $aMatchingsByID = [];
+        foreach($aMatchedArticles as $oSortMatch) {
+            $aMatchingsByID[$oSortMatch->getID()] = $oSortMatch;
         }
 
-        /**
-         * Enforce State for Matching Results
-         */
+        # if and link is active, show only skeletons that match ALL criterias
+        if($sCriteriaLinkMode == 'AND') {
+            foreach ($aMatchingsByID as $oTempMatch) {
+                foreach (array_keys($aMatchingCrits) as $sMatchCrit) {
+                    if (!array_key_exists($oTempMatch->getID(), $aMatchingCrits[$sMatchCrit])) {
+                        unset($aMatchingsByID[$oTempMatch->getID()]);
+                    }
+                }
+            }
+        }
+
+        # apply final matchings
+        $aMatchedArticles = $aMatchingsByID;
+
+        # enforce state on skeletons
         if(count($aMatchedArticles) > 0) {
             # Check if state tag is present
             $sTagKey = 'state';
@@ -176,7 +221,7 @@ class Skeletonrequest extends CoreEntityModel {
         return $aMatchedArticles;
     }
 
-    private function matchByAttribute($sTagKey) {
+    private function matchByAttribute($sTagKey,$sTagLinkType = 'multi') {
         try {
             $oSkeletonResultTbl = CoreController::$oServiceManager->get(\OnePlace\Skeleton\Model\SkeletonTable::class);
         } catch(\RuntimeException $e) {
@@ -186,23 +231,37 @@ class Skeletonrequest extends CoreEntityModel {
         }
         $aMatchedArticles = [];
         # Match Skeleton by Category - only if category tag is found
-        $oTag = CoreController::$aCoreTables['core-tag']->select(['tag_key'=>$sTagKey]);
+        $oTag = CoreController::$aCoreTables['core-tag']->select(['tag_key'=>str_replace(['_idfs'],[''],$sTagKey)]);
         if(count($oTag)) {
             $oTag = $oTag->current();
             # 1. Get all Categories linked to this request
-            $oCategorySel = new Select(CoreController::$aCoreTables['core-entity-tag-entity']->getTable());
-            $oCategorySel->join(['cet'=>'core_entity_tag'],'cet.Entitytag_ID = core_entity_tag_entity.entity_tag_idfs');
-            $oCategorySel->where(['entity_idfs'=>$this->getID(),'cet.tag_idfs = '.$oTag->Tag_ID,'entity_type'=>'skeletonrequest']);
-            $oMyCats = CoreController::$aCoreTables['core-entity-tag']->selectWith($oCategorySel);
-            if(count($oMyCats) > 0) {
-                # Loop over all matched categories
-                foreach($oMyCats as $oMyCat) {
-                    # Find skeleton with the same category
-                    $oMatchedArtsByCat = CoreController::$aCoreTables['core-entity-tag-entity']->select(['entity_tag_idfs'=>$oMyCat->Entitytag_ID,'entity_type'=>'skeleton']);
-                    if(count($oMatchedArtsByCat) > 0) {
-                        foreach($oMatchedArtsByCat as $oMatchRow) {
-                            $aMatchedArticles[] = $oSkeletonResultTbl->getSingle($oMatchRow->entity_idfs);
+            $oMyCats = (object)[];
+            if($sTagLinkType == 'multi') {
+                $oCategorySel = new Select(CoreController::$aCoreTables['core-entity-tag-entity']->getTable());
+                $oCategorySel->join(['cet'=>'core_entity_tag'],'cet.Entitytag_ID = core_entity_tag_entity.entity_tag_idfs');
+                $oCategorySel->where(['entity_idfs'=>$this->getID(),'cet.tag_idfs = '.$oTag->Tag_ID,'entity_type'=>'skeletonrequest']);
+                $oMyCats = CoreController::$aCoreTables['core-entity-tag']->selectWith($oCategorySel);
+
+                if(count($oMyCats) > 0) {
+                    # Loop over all matched categories
+                    foreach($oMyCats as $oMyCat) {
+                        # Find skeleton with the same category
+                        $oMatchedArtsByCat = CoreController::$aCoreTables['core-entity-tag-entity']->select(['entity_tag_idfs'=>$oMyCat->Entitytag_ID,'entity_type'=>'skeleton']);
+                        if(count($oMatchedArtsByCat) > 0) {
+                            foreach($oMatchedArtsByCat as $oMatchRow) {
+                                $oMatchObj = $oSkeletonResultTbl->getSingle($oMatchRow->entity_idfs);
+                                $oMatchObj->sMatchedBy = $sTagKey;
+                                $aMatchedArticles[$oMatchObj->getID()] = $oMatchObj;
+                            }
                         }
+                    }
+                }
+            } else {
+                $oMatchedArtsBySingle = $oSkeletonResultTbl->fetchAll(false,[$sTagKey=>$this->getSelectFieldID($sTagKey)]);
+                if(count($oMatchedArtsBySingle) > 0) {
+                    foreach($oMatchedArtsBySingle as $oMatchObj) {
+                        $oMatchObj->sMatchedBy = $sTagKey;
+                        $aMatchedArticles[$oMatchObj->getID()] = $oMatchObj;
                     }
                 }
             }

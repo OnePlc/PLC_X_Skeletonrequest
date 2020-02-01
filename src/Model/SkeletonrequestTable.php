@@ -40,40 +40,6 @@ class SkeletonrequestTable extends CoreEntityTable {
     }
 
     /**
-     * Fetch All Skeletonrequest Entities based on Filters
-     *
-     * @param bool $bPaginated
-     * @return Paginator Paginated Table Connection
-     * @since 1.0.0
-     */
-    public function fetchAll($bPaginated = false) {
-        $oSel = new Select($this->oTableGateway->getTable());
-
-        # Return Paginator or Raw ResultSet based on selection
-        if ($bPaginated) {
-            # Create result set for user entity
-            $resultSetPrototype = new ResultSet();
-            $resultSetPrototype->setArrayObjectPrototype(new Skeletonrequest($this->oTableGateway->getAdapter()));
-
-            # Create a new pagination adapter object
-            $oPaginatorAdapter = new DbSelect(
-            # our configured select object
-                $oSel,
-                # the adapter to run it against
-                $this->oTableGateway->getAdapter(),
-                # the result set to hydrate
-                $resultSetPrototype
-            );
-            # Create Paginator with Adapter
-            $oPaginator = new Paginator($oPaginatorAdapter);
-            return $oPaginator;
-        } else {
-            $oResults = $this->oTableGateway->selectWith($oSel);
-            return $oResults;
-        }
-    }
-
-    /**
      * Get Skeletonrequest Entity
      *
      * @param int $id
@@ -81,17 +47,7 @@ class SkeletonrequestTable extends CoreEntityTable {
      * @since 1.0.0
      */
     public function getSingle($id) {
-        $id = (int) $id;
-        $rowset = $this->oTableGateway->select(['Skeletonrequest_ID' => $id]);
-        $row = $rowset->current();
-        if (! $row) {
-            throw new \RuntimeException(sprintf(
-                'Could not find skeletonrequest with identifier %d',
-                $id
-            ));
-        }
-
-        return $row;
+        return $this->getSingleEntity($id,'Skeletonrequest_ID');
     }
 
     /**
@@ -142,5 +98,15 @@ class SkeletonrequestTable extends CoreEntityTable {
         $this->oTableGateway->update($aData, ['Skeletonrequest_ID' => $id]);
 
         return $id;
+    }
+
+    /**
+     * Generate new single Entity
+     *
+     * @return Skeletonrequest
+     * @since 1.0.7
+     */
+    public function generateNew() {
+        return new Skeletonrequest($this->oTableGateway->getAdapter());
     }
 }
