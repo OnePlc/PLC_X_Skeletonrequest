@@ -62,6 +62,11 @@ class SkeletonrequestController extends CoreController {
         # Set Layout based on users theme
         $this->setThemeBasedLayout('skeletonrequest');
 
+        # Set Links for Breadcrumb
+        $this->layout()->aNavLinks = [
+            (object)['label'=>'Skeletonrequest'],
+        ];
+
         # Check license
         if(!$this->checkLicense('skeletonrequest')) {
             $this->flashMessenger()->addErrorMessage('You have no active license for skeletonrequest');
@@ -100,6 +105,12 @@ class SkeletonrequestController extends CoreController {
     public function addAction() {
         # Set Layout based on users theme
         $this->setThemeBasedLayout('skeletonrequest');
+
+        # Add Links for Breadcrumb
+        $this->layout()->aNavLinks = [
+            (object)['label'=>'Skeletonrequests','href'=>'/skeletonrequest'],
+            (object)['label'=>'Add Skeletonrequest'],
+        ];
 
         # Check license
         if(!$this->checkLicense('skeletonrequest')) {
@@ -196,6 +207,12 @@ class SkeletonrequestController extends CoreController {
             # Load Fields for View Form
             $this->setFormFields($this->sSingleForm);
 
+            # Add Links for Breadcrumb
+            $this->layout()->aNavLinks = [
+                (object)['label'=>'Skeletonrequests','href'=>'/skeletonrequest'],
+                (object)['label'=>'Edit Skeletonrequest'],
+            ];
+
             # Log Performance in DB
             $aMeasureEnd = getrusage();
             $this->logPerfomance('skeletonrequest-edit',$this->rutime($aMeasureEnd,CoreController::$aPerfomanceLogStart,"utime"),$this->rutime($aMeasureEnd,CoreController::$aPerfomanceLogStart,"stime"));
@@ -257,6 +274,12 @@ class SkeletonrequestController extends CoreController {
             echo 'Skeletonrequest Not found';
             return false;
         }
+
+        # Add Links for Breadcrumb
+        $this->layout()->aNavLinks = [
+            (object)['label'=>'Skeletonrequests','href'=>'/skeletonrequest'],
+            (object)['label'=>'Skeletonrequest','label_append'=>$oSkeletonrequest->getLabel()],
+        ];
 
         # Attach Skeletonrequest Entity to Layout
         $this->setViewEntity($oSkeletonrequest);
